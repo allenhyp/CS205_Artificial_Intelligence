@@ -24,6 +24,15 @@ class General_Search(object):
     def __init__(self):
         self.moves = {0: [1, 3], 1: [2, 4, 0], 2: [1, 5], 3: [0, 4, 6], 4: [5, 7, 1, 3],
                       5: [8, 4, 2], 6: [3, 7], 7: [8, 6, 4], 8: [5, 7]}
+        self.manhattan_distance = {0: [0, 0, 0, 0, 0, 0, 0, 0, 0],
+                                   1: [0, 1, 2, 1, 2, 3, 2, 3, 4],
+                                   2: [1, 0, 1, 2, 1, 2, 3, 2, 3],
+                                   3: [2, 1, 0, 3, 2, 1, 4, 3, 2],
+                                   4: [1, 2, 3, 0, 1, 2, 1, 2, 3],
+                                   5: [2, 1, 2, 1, 0, 1, 2, 1, 2],
+                                   6: [3, 2, 1, 2, 1, 0, 3, 2, 1],
+                                   7: [2, 3, 4, 1, 2, 3, 0, 1, 2],
+                                   8: [3, 2, 3, 2, 1, 2, 1, 0, 1]}
         # self.goal_state = [[1, 2, 3], [4, 5, 6], [7, 8, 0]]
         self.goal_state_string = '123456780'
         self.duplicated_state = Set()
@@ -49,7 +58,7 @@ class General_Search(object):
             self.num_of_expanded_nodes += len(new_nodes)
         return new_nodes
 
-    def make_heap(self, state):
+    def make_mis_heap(self, state):
         self.max_size_of_heap = 1
         self.num_of_expanded_nodes = 0
         dis = self.check_misplaced_tile_heuristic(state)
@@ -57,9 +66,23 @@ class General_Search(object):
         heapq.heappush(self.heap, (dis, [state, 0, dis]))
         return
 
-    def heap_push(self, new_nodes):
+    def mis_heap_push(self, new_nodes):
         for n in new_nodes:
             h = self.check_misplaced_tile_heuristic(n[0])
+            heapq.heappush(self.heap, (n[1] + h, [n[0], n[1], h]))
+        return
+
+    def make_man_heap(self, state):
+        self.max_size_of_heap = 1
+        self.num_of_expanded_nodes = 0
+        dis = self.check_manhattan_distance(state)
+        self.heap = []
+        heapq.heappush(self.heap, (dis, [state, 0, dis]))
+        return
+
+    def man_heap_push(self, new_nodes):
+        for n in new_nodes:
+            h = self.check_manhattan_distance(n[0])
             heapq.heappush(self.heap, (n[1] + h, [n[0], n[1], h]))
         return
 
@@ -85,7 +108,7 @@ class General_Search(object):
         return
 
     def a_star_misplaced_tile_heuristic(self, original_state_string):
-        self.make_heap(original_state_string)
+        self.make_mis_heap(original_state_string)
         while True:
             if len(self.heap) == 0:
                 print('FAILURE\n')
@@ -96,7 +119,7 @@ class General_Search(object):
                 break
             print("The best state to expand with a g(n) = {} and h(n) = {} is ...".format(node[1], node[2]))
             self.display(node[0])
-            self.heap_push(self.expand(node))
+            self.mis_heap_push(self.expand(node))
             self.update_heap_size()
 
         print("Expanded nodes = {},\nmax num in queue = {},\ndepth = {}\n"
@@ -106,7 +129,25 @@ class General_Search(object):
         return
 
     def a_star_manhattan_distance_heuristic(self, original_state_string):
-        return True
+        self.make_man_heap(original_state_string)
+        while True:
+            if len(self.heap) == 0:
+                print('FAILURE\n')
+                break
+            node = (heapq.heappop(self.heap))[1]
+            if node[0] == self.goal_state_string:
+                print('SUCCESS\n')
+                break
+            print("The best state to expand with a g(n) = {} and h(n) = {} is ...".format(node[1], node[2]))
+            self.display(node[0])
+            self.man_heap_push(self.expand(node))
+            self.update_heap_size()
+
+        print("Expanded nodes = {},\nmax num in queue = {},\ndepth = {}\n"
+              .format(self.num_of_expanded_nodes,
+                      self.max_size_of_heap,
+                      node[1]))
+        return
 
     def state_to_string(self, state):
         state_str = ''
@@ -119,6 +160,12 @@ class General_Search(object):
         for i in range(9):
             if state[i] != self.goal_state_string[i]:
                 dis += 1
+        return dis
+
+    def check_manhattan_distance(self, state):
+        dis = 0
+        for i in range(9):
+            dis += (self.manhattan_distance[int(state[i])])[i]
         return dis
 
     def update_queue_size(self):
