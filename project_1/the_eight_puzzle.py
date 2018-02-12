@@ -1,4 +1,5 @@
 from sets import Set
+import heapq
 
 
 class Queue(object):
@@ -23,7 +24,7 @@ class General_Search(object):
     def __init__(self):
         self.moves = {0: [1, 3], 1: [2, 4, 0], 2: [1, 5], 3: [0, 4, 6], 4: [5, 7, 1, 3],
                       5: [8, 4, 2], 6: [3, 7], 7: [8, 6, 4], 8: [5, 7]}
-        self.goal_state = [[1, 2, 3], [4, 5, 6], [7, 8, 0]]
+        # self.goal_state = [[1, 2, 3], [4, 5, 6], [7, 8, 0]]
         self.goal_state_string = '123456780'
         self.duplicated_state = Set()
 
@@ -35,9 +36,7 @@ class General_Search(object):
         return self.nodes
 
     def expand(self, node):
-        print(node)
-        self.display(node[0])
-        print("Expanding this node...")
+        print("Expanding this node...\n")
         zero_cur_pos = node[0].find('0')
         zero_next_pos = self.moves[zero_cur_pos]
         new_nodes = []
@@ -49,6 +48,20 @@ class General_Search(object):
                 self.duplicated_state.add(temp_node)
             self.num_of_expanded_nodes += len(new_nodes)
         return new_nodes
+
+    def make_heap(self, state):
+        self.max_size_of_heap = 1
+        self.num_of_expanded_nodes = 0
+        dis = self.check_misplaced_tile_heuristic(state)
+        self.heap = []
+        heapq.heappush(self.heap, (dis, [state, 0, dis]))
+        return
+
+    def heap_push(self, new_nodes):
+        for n in new_nodes:
+            h = self.check_misplaced_tile_heuristic(n[0])
+            heapq.heappush(self.heap, (n[1] + h, [n[0], n[1], h]))
+        return
 
     def uniform_cost_search(self, original_state_string):
         self.make_queue(original_state_string)
@@ -72,7 +85,24 @@ class General_Search(object):
         return
 
     def a_star_misplaced_tile_heuristic(self, original_state_string):
+        self.make_heap(original_state_string)
+        while True:
+            if len(self.heap) == 0:
+                print('FAILURE\n')
+                break
+            node = (heapq.heappop(self.heap))[1]
+            if node[0] == self.goal_state_string:
+                print('SUCCESS\n')
+                break
+            print("The best state to expand with a g(n) = {} and h(n) = {} is ...".format(node[1], node[2]))
+            self.display(node[0])
+            self.heap_push(self.expand(node))
+            self.update_heap_size()
 
+        print("Expanded nodes = {},\nmax num in queue = {},\ndepth = {}\n"
+              .format(self.num_of_expanded_nodes,
+                      self.max_size_of_heap,
+                      node[1]))
         return
 
     def a_star_manhattan_distance_heuristic(self, original_state_string):
@@ -84,8 +114,18 @@ class General_Search(object):
             state_str += s
         return state_str
 
+    def check_misplaced_tile_heuristic(self, state):
+        dis = 0
+        for i in range(9):
+            if state[i] != self.goal_state_string[i]:
+                dis += 1
+        return dis
+
     def update_queue_size(self):
         self.max_size_of_queue = max(self.max_size_of_queue, self.nodes.size())
+
+    def update_heap_size(self):
+        self.max_size_of_heap = max(self.max_size_of_heap, len(self.heap))
 
     def display(self, s):
         print('{} {} {}'.format(s[0], s[1], s[2]))
@@ -104,7 +144,7 @@ def main():
     print("\t2. A* with the Misplaced Tile heuristic\n")
     print("\t3. A* with the Manhattan distance heuristic\n")
     '''
-    original_state = '1 2 3 4 5 6 8 7 0'
+    original_state = '1 2 3 4 8 0 7 6 5'
     choice = raw_input()
     original_state_string = ''
     for s in original_state.split(' '):
