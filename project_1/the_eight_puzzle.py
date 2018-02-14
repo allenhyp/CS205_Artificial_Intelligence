@@ -1,4 +1,3 @@
-from sets import Set
 import heapq
 
 
@@ -33,9 +32,8 @@ class General_Search(object):
                                    6: [3, 2, 1, 2, 1, 0, 3, 2, 1],
                                    7: [2, 3, 4, 1, 2, 3, 0, 1, 2],
                                    8: [3, 2, 3, 2, 1, 2, 1, 0, 1]}
-        # self.goal_state = [[1, 2, 3], [4, 5, 6], [7, 8, 0]]
         self.goal_state_string = '123456780'
-        self.duplicated_state = Set()
+        self.duplicated_state = set()
 
     def make_queue(self, state):
         self.nodes = Queue()
@@ -98,6 +96,7 @@ class General_Search(object):
                 print('SUCCESS\n')
                 break
 
+            self.display(node[0])
             self.nodes.enqueue(self.expand(node))
             self.update_queue_size()
 
@@ -181,18 +180,20 @@ class General_Search(object):
 
 
 def main():
-    '''
-    print("Enter your puzzle, use a zero to represent the blank\n")
-    original_state = raw_input("Enter the first row, use space between numbers  \t")
-    original_state += raw_input("Enter the second row, use space between numbers \t")
-    original_state += raw_input("Enter the third row, use space between numbers  \t")
-    print("Enter your choice of algorithm\n")
-    print("\t1. Uniform Cost\n")
-    print("\t2. A* with the Misplaced Tile heuristic\n")
-    print("\t3. A* with the Manhattan distance heuristic\n")
-    '''
-    original_state = '1 2 3 4 8 0 7 6 5'
-    choice = raw_input()
+    input_choice = input("Type '1' to use a default puzzle, or '2' to create your own.\n")
+    original_state = ''
+    if input_choice == '2':
+        print("Enter your puzzle, use a zero to represent the blank\n")
+        original_state = input("Enter the first row, use space between numbers  \t")
+        original_state += input("Enter the second row, use space between numbers \t")
+        original_state += input("Enter the third row, use space between numbers  \t")
+    else:
+        original_state = '1 2 3 4 5 6 8 7 0'
+    print("Enter your choice of algorithm")
+    print("\t1. Uniform Cost")
+    print("\t2. A* with the Misplaced Tile heuristic")
+    print("\t3. A* with the Manhattan distance heuristic")
+    choice = input()
     original_state_string = ''
     for s in original_state.split(' '):
         original_state_string += s
