@@ -1,4 +1,5 @@
 #ignore instruction (doc) file
 *.doc
 *.docx
+*.pdf
 
