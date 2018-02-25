@@ -1,4 +1,5 @@
 import heapq
+import time
 
 
 class General_Search(object):
@@ -126,6 +127,7 @@ class General_Search(object):
         dis = 0
         for i in range(9):
             dis += (self.manhattan_distance[int(state[i])])[i]
+            # dis += int(abs(int(state[i])-i+1)/3) + abs(int(state[i])-i+1)%3
         return dis
 
     def update_info(self, num_new_nodes, new_depth):
@@ -145,32 +147,36 @@ class General_Search(object):
 def main():
     input_choice = input("Type '1' to use a default puzzle, or '2' to create your own.\n")
     original_state = ''
+    original_state_string = ''
     if input_choice == '2':
         print("Enter your puzzle, use a zero to represent the blank\n")
         original_state = input("Enter the first row, use space between numbers  \t")
         original_state += input("Enter the second row, use space between numbers \t")
         original_state += input("Enter the third row, use space between numbers  \t")
     else:
-        original_state = '1 2 3 4 8 0 7 6 5'
+        original_state_string = '123406758'
     print("Enter your choice of algorithm")
     print("\t1. Uniform Cost")
     print("\t2. A* with the Misplaced Tile heuristic")
     print("\t3. A* with the Manhattan distance heuristic")
     choice = input()
-    original_state_string = ''
-    for s in original_state.split(' '):
-        original_state_string += s
+    if original_state_string == '':
+        for s in original_state.split(' '):
+            original_state_string += s
     solve_eight_puzzle = General_Search()
+    start_time = time.time()
     if choice == '1':
         final_depth = solve_eight_puzzle.uniform_cost_search(original_state_string)
     elif choice == '2':
         final_depth = solve_eight_puzzle.a_star_misplaced_tile_heuristic(original_state_string)
     elif choice == '3':
         final_depth = solve_eight_puzzle.a_star_manhattan_distance_heuristic(original_state_string)
-    print("Expanded nodes = {},\nmax num in queue = {},\ndepth = {}\n"
+
+    print("Expanded nodes = {},\nMaxinmum queue size  = {},\nDepth = {},\nTime = {}"
           .format(solve_eight_puzzle.num_of_expanded_nodes,
                   solve_eight_puzzle.max_size_of_heap,
-                  final_depth))
+                  final_depth,
+                  int((time.time() - start_time) * 1000000)))
     return
 
 
