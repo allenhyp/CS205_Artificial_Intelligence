@@ -9,6 +9,8 @@ class Nearest_Neighbor(object):
         self.current_feature_set = set()
         self.parse_data(file_name)
         self.normalize_data()
+        self.number_of_test_case = int(self.number_of_instances * 1)
+        print("Number of test case = {0}".format(self.number_of_test_case))
 
     def parse_data(self, file_name):
         file_object = open('./205_proj2_data/' + file_name, 'r')
@@ -33,11 +35,11 @@ class Nearest_Neighbor(object):
                 d[i] = d[i] / total
 
     def leave_one_out_cross_validation(self, feature_set):
-        test_index = randrange(self.number_of_instances)
-        test_data = self.data_list[test_index]
-        min_dis = 1e308
         predict_correct = 0.
-        for __ in range(self.number_of_instances):
+        for __ in range(self.number_of_test_case):
+            test_index = randrange(self.number_of_instances)
+            test_data = self.data_list[test_index]
+            min_dis = 1e308
             predict_class = 2
             for train_data in self.data_list:
                 if test_data != train_data:
@@ -48,28 +50,34 @@ class Nearest_Neighbor(object):
                         predict_class = train_data[0]
                         min_dis = this_dis
             predict_correct = predict_correct + 1 if predict_class == test_data[0] else predict_correct
-        return predict_correct / self.number_of_instances
-
+        return predict_correct / self.number_of_test_case
 
     def forward_selection(self):
+        best_so_far_accuracy = 0.
         for i in range(self.number_of_features):
             print("On the {0}th level of the search tree".format(i))
-            best_so_far_accuracy = 0.
             feature_to_add_at_this_level = 0
-            for j in range(self.number_of_features):
+            best_accuracy_this_level = 0.
+            for j in range(1, self.number_of_features + 1):
                 test_feature_set = set()
                 test_feature_set = test_feature_set | self.current_feature_set
                 if j not in test_feature_set:
                     test_feature_set.add(j)
                     new_acc = self.leave_one_out_cross_validation(test_feature_set)
                     print("--Consider adding the {0} feature => acc = {1}".format(j, new_acc))
-                    if new_acc > best_so_far_accuracy:
+                    if new_acc > best_accuracy_this_level:
                         feature_to_add_at_this_level = j
+                        best_accuracy_this_level = new_acc
+            print("best_accuracy_this_level: {0}, best_so_far_accuracy: {1}".format(best_accuracy_this_level, best_so_far_accuracy))
+            if best_accuracy_this_level < best_so_far_accuracy:
+                print("On level {0}, no better feature could be added".format(i))
+                break
+            best_so_far_accuracy = best_accuracy_this_level
             self.current_feature_set.add(feature_to_add_at_this_level)
             print("On level {0}, I added feature {1} to current set".format(i, feature_to_add_at_this_level))
-            print(self.current_feature_set)
+        print(self.current_feature_set)
 
-    def backward_selection(self):
+    def backward_elimination(self):
         return 0
 
     def customed_algorithm(self):
@@ -78,17 +86,17 @@ class Nearest_Neighbor(object):
 
 def main():
     # input_file_name = input("Type in the name of the file to test: ")
-    input_file_name = "CS205_BIGtestdata__1.txt"
-    nearest_neighbor = Nearest_Neighbor(input_file_name)
     print("Type the number of the algorithm you want to run.")
     print("\t 1) Forward Selection")
-    print("\t 2) Backward Selection")
+    print("\t 2) Backward Elimination")
     print("\t 3) customed Algorithm")
     method_option = input()
+    input_file_name = "CS205_SMALLtestdata__46.txt"
+    nearest_neighbor = Nearest_Neighbor(input_file_name)
     if method_option == '1':
         nearest_neighbor.forward_selection()
     elif method_option == '2':
-        nearest_neighbor.backward_selection()
+        nearest_neighbor.backward_elimination()
     elif method_option == '3':
         nearest_neighbor.customed_algorithm()
 
