@@ -54,7 +54,8 @@ class Nearest_Neighbor(object):
 
     def forward_selection(self):
         best_so_far_accuracy = 0.
-        for i in range(self.number_of_features):
+        best_set = ''
+        for i in range(1, self.number_of_features + 1):
             print("On the {0}th level of the search tree".format(i))
             feature_to_add_at_this_level = 0
             best_accuracy_this_level = 0.
@@ -69,13 +70,14 @@ class Nearest_Neighbor(object):
                         feature_to_add_at_this_level = j
                         best_accuracy_this_level = new_acc
             print("best_accuracy_this_level: {0}, best_so_far_accuracy: {1}".format(best_accuracy_this_level, best_so_far_accuracy))
-            if best_accuracy_this_level < best_so_far_accuracy:
-                print("On level {0}, no better feature could be added".format(i))
-                break
-            best_so_far_accuracy = best_accuracy_this_level
             self.current_feature_set.add(feature_to_add_at_this_level)
+            if best_accuracy_this_level > best_so_far_accuracy:
+                best_so_far_accuracy = best_accuracy_this_level
+                best_set = ''
+                for s in self.current_feature_set:
+                    best_set += '{0}, '.format(s)
             print("On level {0}, I added feature {1} to current set".format(i, feature_to_add_at_this_level))
-        print(self.current_feature_set)
+        print("Overall, the best set with accuracy {0} is [{1}]".format(best_so_far_accuracy, best_set[:-2]))
 
     def backward_elimination(self):
         return 0
@@ -91,7 +93,7 @@ def main():
     print("\t 2) Backward Elimination")
     print("\t 3) customed Algorithm")
     method_option = input()
-    input_file_name = "CS205_SMALLtestdata__46.txt"
+    input_file_name = "CS205_BIGtestdata__35.txt"
     nearest_neighbor = Nearest_Neighbor(input_file_name)
     if method_option == '1':
         nearest_neighbor.forward_selection()
