@@ -34,8 +34,9 @@ class Nearest_Neighbor(object):
             for d in self.data_list:
                 d[i] = d[i] / total
 
-    def leave_one_out_cross_validation(self, feature_set):
-        predict_correct = 0.
+    def leave_one_out_cross_validation(self, feature_set, upper_bound):
+        predict_correct = 0
+        predict_wrong = 0
         for __ in range(self.number_of_test_case):
             test_index = randrange(self.number_of_instances)
             test_data = self.data_list[test_index]
@@ -49,12 +50,18 @@ class Nearest_Neighbor(object):
                     if this_dis < min_dis:
                         predict_class = train_data[0]
                         min_dis = this_dis
-            predict_correct = predict_correct + 1 if predict_class == test_data[0] else predict_correct
-        return predict_correct / self.number_of_test_case
+            if predict_class == test_data[0]:
+                predict_correct += 1
+            else:
+                predict_wrong += 1
+            if predict_wrong >= upper_bound:
+                break
+        return predict_correct
 
     def forward_selection(self):
         best_so_far_accuracy = 0.
         best_set = ''
+        wrong_upper_bound = self.number_of_test_case
         for i in range(1, self.number_of_features + 1):
             print("On the {0}th level of the search tree".format(i))
             feature_to_add_at_this_level = 0
@@ -64,11 +71,13 @@ class Nearest_Neighbor(object):
                 test_feature_set = test_feature_set | self.current_feature_set
                 if j not in test_feature_set:
                     test_feature_set.add(j)
-                    new_acc = self.leave_one_out_cross_validation(test_feature_set)
-                    print("--Consider adding the {0} feature => acc = {1}".format(j, new_acc))
+                    ret = self.leave_one_out_cross_validation(test_feature_set, wrong_upper_bound)
+                    new_acc = float(ret) / self.number_of_test_case
+                    print("--Consider adding the {0}th feature => acc = {1}".format(j, new_acc))
                     if new_acc > best_accuracy_this_level:
                         feature_to_add_at_this_level = j
                         best_accuracy_this_level = new_acc
+                        wrong_upper_bound = self.number_of_test_case - ret
             print("best_accuracy_this_level: {0}, best_so_far_accuracy: {1}".format(best_accuracy_this_level, best_so_far_accuracy))
             self.current_feature_set.add(feature_to_add_at_this_level)
             if best_accuracy_this_level > best_so_far_accuracy:
@@ -93,7 +102,7 @@ def main():
     print("\t 2) Backward Elimination")
     print("\t 3) customed Algorithm")
     method_option = input()
-    input_file_name = "CS205_BIGtestdata__35.txt"
+    input_file_name = "CS205_BIGtestdata__36.txt"
     nearest_neighbor = Nearest_Neighbor(input_file_name)
     if method_option == '1':
         nearest_neighbor.forward_selection()
