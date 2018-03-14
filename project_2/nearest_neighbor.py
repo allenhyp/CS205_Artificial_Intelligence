@@ -1,4 +1,5 @@
 from random import randrange
+from math import sqrt
 
 
 class Nearest_Neighbor(object):
@@ -27,12 +28,19 @@ class Nearest_Neighbor(object):
         self.number_of_features = len(self.data_list[0]) - 1
 
     def normalize_data(self):
+        print("Please wait while I normalize the data...")
         for i in range(1, self.number_of_features + 1):
-            total = 0
+            total = 0.
             for d in self.data_list:
                 total += d[i]
+            mean = total / self.number_of_instances
+            variance = 0.
             for d in self.data_list:
-                d[i] = d[i] / total
+                variance += (d[i] - mean) ** 2
+            sigma = sqrt(variance / (self.number_of_instances - 1))
+            for d in self.data_list:
+                d[i] = (d[i] - mean) / sigma
+        print("Done!")
 
     def leave_one_out_cross_validation(self, feature_set, upper_bound):
         predict_correct = 0
@@ -80,12 +88,12 @@ class Nearest_Neighbor(object):
                         wrong_upper_bound = self.number_of_test_case - ret
             print("best_accuracy_this_level: {0}, best_so_far_accuracy: {1}".format(best_accuracy_this_level, best_so_far_accuracy))
             self.current_feature_set.add(feature_to_add_at_this_level)
+            print("On level {0}, I added feature {1} to current set".format(i, feature_to_add_at_this_level))
             if best_accuracy_this_level > best_so_far_accuracy:
                 best_so_far_accuracy = best_accuracy_this_level
                 best_set = ''
                 for s in self.current_feature_set:
                     best_set += '{0}, '.format(s)
-            print("On level {0}, I added feature {1} to current set".format(i, feature_to_add_at_this_level))
         print("Overall, the best set with accuracy {0} is [{1}]".format(best_so_far_accuracy, best_set[:-2]))
 
     def backward_elimination(self):
@@ -95,6 +103,7 @@ class Nearest_Neighbor(object):
         self.current_feature_set = set()
         for i in range(1, self.number_of_features + 1):
             self.current_feature_set.add(i)
+        best_so_far_accuracy = self.leave_one_out_cross_validation(self.current_feature_set, self.number_of_test_case) / self.number_of_test_case
 
         for i in range(1, self.number_of_features + 1):
             print("On the {0}th level of the search tree".format(i))
@@ -113,12 +122,12 @@ class Nearest_Neighbor(object):
                     wrong_upper_bound = self.number_of_test_case - ret
             print("best_accuracy_this_level: {0}, best_so_far_accuracy: {1}".format(best_accuracy_this_level, best_so_far_accuracy))
             self.current_feature_set.remove(feature_to_subtract_at_this_level)
-            if best_accuracy_this_level > best_so_far_accuracy:
+            print("On level {0}, I subtracted feature {1} to current set".format(i, feature_to_subtract_at_this_level))
+            if best_accuracy_this_level >= best_so_far_accuracy:
                 best_so_far_accuracy = best_accuracy_this_level
                 best_set = ''
                 for s in self.current_feature_set:
                     best_set += '{0}, '.format(s)
-            print("On level {0}, I subtracted feature {1} to current set".format(i, feature_to_subtract_at_this_level))
         print("Overall, the best set with accuracy {0} is [{1}]".format(best_so_far_accuracy, best_set[:-2]))
 
     def customed_algorithm(self):
