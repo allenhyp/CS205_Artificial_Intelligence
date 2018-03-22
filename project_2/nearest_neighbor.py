@@ -11,8 +11,6 @@ class Nearest_Neighbor(object):
         self.current_feature_set = set()
         self.parse_data(file_name)
         self.normalize_data()
-        self.number_of_test_case = int(self.number_of_instances * 1)
-        print("Number of test case = {0}".format(self.number_of_test_case))
 
     def parse_data(self, file_name):
         file_object = open('./205_proj2_data/' + file_name, 'r')
@@ -55,7 +53,6 @@ class Nearest_Neighbor(object):
         predict_correct = 0
         predict_wrong = 0
         for test_index in range(len(data_set)):
-            # test_index = randrange(self.number_of_instances)
             test_data = data_set[test_index]
             min_dis = 1e308
             predict_class = 2
@@ -78,7 +75,7 @@ class Nearest_Neighbor(object):
     def forward_selection(self):
         best_so_far_accuracy = 0.
         best_set = set()
-        wrong_upper_bound = self.number_of_test_case
+        wrong_upper_bound = self.number_of_instances
         for i in range(1, self.number_of_features + 1):
             print("On the {0}th level of the search tree".format(i))
             feature_to_add_at_this_level = 0
@@ -88,12 +85,12 @@ class Nearest_Neighbor(object):
                 if j not in test_feature_set:
                     test_feature_set.add(j)
                     ret = self.leave_one_out_cross_validation(self.data_list, test_feature_set, wrong_upper_bound)
-                    new_acc = float(ret) / self.number_of_test_case
+                    new_acc = float(ret) / self.number_of_instances
                     print("--Consider adding the {0}th feature => acc = {1}".format(j, new_acc))
                     if new_acc > best_accuracy_this_level:
                         feature_to_add_at_this_level = j
                         best_accuracy_this_level = new_acc
-                        wrong_upper_bound = self.number_of_test_case - ret
+                        wrong_upper_bound = self.number_of_instances - ret
             print("best_accuracy_this_level: {0}, best_so_far_accuracy: {1}".format(best_accuracy_this_level, best_so_far_accuracy))
             self.current_feature_set.add(feature_to_add_at_this_level)
             print("On level {0}, I added feature {1} to current set".format(i, feature_to_add_at_this_level))
@@ -106,12 +103,11 @@ class Nearest_Neighbor(object):
     def backward_elimination(self):
         best_so_far_accuracy = 0.
         best_set = set()
-        wrong_upper_bound = self.number_of_test_case
+        wrong_upper_bound = self.number_of_instances
         self.current_feature_set = set()
-        for i in range(1, self.number_of_features + 1):
-            self.current_feature_set.add(i)
-            best_set.add(i)
-        best_so_far_accuracy = self.leave_one_out_cross_validation(self.data_list, self.current_feature_set, self.number_of_test_case) / self.number_of_test_case
+        self.current_feature_set = {i for i in range(1, self.number_of_features + 1)}
+        best_set = {i for i in range(1, self.number_of_features + 1)}
+        best_so_far_accuracy = float(self.leave_one_out_cross_validation(self.data_list, self.current_feature_set, self.number_of_instances)) / self.number_of_instances
         print("init run with all feature, acc = {0}".format(best_so_far_accuracy))
         for i in range(1, self.number_of_features):
             print("On the {0}th level of the search tree".format(i))
@@ -122,12 +118,12 @@ class Nearest_Neighbor(object):
                 test_feature_set = test_feature_set.union(self.current_feature_set)
                 test_feature_set.remove(feature)
                 ret = self.leave_one_out_cross_validation(self.data_list, test_feature_set, wrong_upper_bound)
-                new_acc = float(ret) / self.number_of_test_case
+                new_acc = float(ret) / self.number_of_instances
                 print("--Consider subtracting the {0}th feature => acc = {1}".format(feature, new_acc))
                 if new_acc > best_accuracy_this_level:
                     feature_to_subtract_at_this_level = feature
                     best_accuracy_this_level = new_acc
-                    wrong_upper_bound = self.number_of_test_case - ret
+                    wrong_upper_bound = self.number_of_instances - ret
             print("best_accuracy_this_level: {0}, best_so_far_accuracy: {1}".format(best_accuracy_this_level, best_so_far_accuracy))
             self.current_feature_set.remove(feature_to_subtract_at_this_level)
             print("On level {0}, I subtracted feature {1} from current set".format(i, feature_to_subtract_at_this_level))
@@ -141,6 +137,9 @@ class Nearest_Neighbor(object):
         current_feature_set = set()
         best_set = set()
         best_so_far_accuracy = 0.
+        falling_count = 0
+        if sample_rate < 6:
+            sample_rate = 6
         for i in range(1, sample_rate):
             print("On the {0}th level of the search tree".format(i))
             wrong_upper_bound = len(sample)
@@ -151,39 +150,43 @@ class Nearest_Neighbor(object):
                 if j not in test_feature_set and j not in ignore_set:
                     test_feature_set.add(j)
                     ret = self.leave_one_out_cross_validation(sample, test_feature_set, wrong_upper_bound)
-                    new_acc = float(ret) / self.number_of_test_case
+                    new_acc = float(ret) / self.number_of_instances
                     print("--Consider adding the {0}th feature => acc = {1}".format(j, new_acc))
                     if new_acc > best_accuracy_this_level:
                         feature_to_add_at_this_level = j
                         best_accuracy_this_level = new_acc
-                        wrong_upper_bound = self.number_of_test_case - ret
+                        wrong_upper_bound = self.number_of_instances - ret
             print("best_accuracy_this_level: {0}, best_so_far_accuracy: {1}".format(best_accuracy_this_level, best_so_far_accuracy))
             current_feature_set.add(feature_to_add_at_this_level)
             print("On level {0}, I added feature {1} to current set".format(i, feature_to_add_at_this_level))
             if best_accuracy_this_level > best_so_far_accuracy:
                 best_so_far_accuracy = best_accuracy_this_level
                 best_set = best_set.union(current_feature_set)
+            elif best_accuracy_this_level < best_so_far_accuracy:
+                falling_count += 1
+                if falling_count > 3:
+                    break
         return best_set
 
     def my_algorithm(self):
-        resample_result_list = []
-        for _ in range(3):
+        first_round_acc = 0.
+        strong_feature_set = {i for i in range(1, self.number_of_features + 1)}
+        weak_feature_set = {i for i in range(1, self.number_of_features + 1)}
+        for _ in range(5):
             sample = self.resample()
-            resample_result_list.append(self.search(sample, 10))
-        
-        strong_feature_set = resample_result_list[0]
-        for i in range(1, len(resample_result_list)):
-            strong_feature_set = strong_feature_set.intersection(resample_result_list[i])
-        resample_result_list = []
+            new_features = self.search(sample, int(self.number_of_features * 0.1))
+            strong_feature_set = strong_feature_set.intersection(new_features)
+            first_round_acc = max(first_round_acc,
+                                  self.leave_one_out_cross_validation(self.data_list, 
+                                                                      new_features,
+                                                                      self.number_of_instances))
 
-        for _ in range(3):
+        for _ in range(5):
             sample = self.resample()
-            resample_result_list.append(self.search(sample, 10, strong_feature_set))
+            new_features = self.search(sample, int(self.number_of_features * 0.1), strong_feature_set)
+            weak_feature_set = weak_feature_set.intersection(new_features)
 
-        weak_feature_set = resample_result_list[0].copy()
-        for i in range(1, len(resample_result_list)):
-            weak_feature_set = weak_feature_set.intersection(resample_result_list[i])
-
+        print("Strong features: {0}, with acc: {1}".format(strong_feature_set, first_round_acc / len(self.data_list)))
         strong_feature_set = strong_feature_set.union(weak_feature_set)
         ret = self.leave_one_out_cross_validation(self.data_list, strong_feature_set, len(self.data_list))
         acc = float(ret) / len(self.data_list)
