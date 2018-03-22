@@ -167,28 +167,15 @@ class Nearest_Neighbor(object):
 
     def my_algorithm(self):
         first_round_acc = 0.
-        first_round_feature_set = set()
-        # weak_feature_set = {i for i in range(1, self.number_of_features + 1)}
-        for _ in range(5):
-            sample = self.resample()
-            new_features = self.search(sample, self.number_of_features)
-            first_round_feature_set = first_round_feature_set.union(new_features)
-            first_round_acc = max(first_round_acc,
-                                  self.leave_one_out_cross_validation(self.data_list, 
-                                                                      new_features,
-                                                                      self.number_of_instances))
-        print(first_round_feature_set)
-        print(self.leave_one_out_cross_validation(self.data_list, first_round_feature_set, self.number_of_instances))
-        print("-----------------------\n")
-        print("-----------------------\n")
-        print("-----------------------\n")
-        for _ in range(5):
+        first_round_feature_set = {x for x in range(1, self.number_of_features + 1)}
+        for _ in range(3):
             sample = self.resample()
             best_so_far_accuracy = 0.
-            best_set = first_round_feature_set.copy()
             wrong_upper_bound = len(sample)
             current_feature_set = first_round_feature_set.copy()
+            best_set = current_feature_set.copy()
             best_so_far_accuracy = first_round_acc
+            falling_count = 0
             for i in range(1, len(first_round_feature_set)):
                 print("On the {0}th level of the search tree".format(i))
                 feature_to_subtract_at_this_level = 0
@@ -208,9 +195,24 @@ class Nearest_Neighbor(object):
                 if best_accuracy_this_level >= best_so_far_accuracy:
                     best_so_far_accuracy = best_accuracy_this_level
                     best_set = best_set.intersection(current_feature_set)
+                    falling_count = 0
+                else:
+                    falling_count += 1
+                    if falling_count > 3:
+                        break
+            first_round_feature_set = first_round_feature_set.intersection(best_set)
+        print(first_round_feature_set)
+        first_round_acc = self.leave_one_out_cross_validation(self.data_list, first_round_feature_set, self.number_of_instances)
+        print("-----------------------\n")
+        print("-----------------------\n")
+        print("-----------------------\n")
+        second_round_feature_set = set()
+        for _ in range(5):
+            sample = self.resample()
+            new_features = self.search(sample, self.number_of_features)
+            second_round_feature_set = second_round_feature_set.union(new_features)
 
-        print("first round features: {0}, with acc: {1}".format(first_round_feature_set, first_round_acc))
-        # first_round_feature_set = first_round_feature_set.union(weak_feature_set)
+        print("first round features: {0}, with acc: {1}".format(second_round_feature_set, first_round_acc))
         acc = self.leave_one_out_cross_validation(self.data_list, best_set, self.number_of_instances)
         print("Overall, the best set with accuracy {0} is {1}".format(acc, best_set))
 
