@@ -42,7 +42,6 @@ class Nearest_Neighbor(object):
         print("Done!")
 
     def resample(self):
-        print("Resamle")
         sample_list = sample(range(self.number_of_instances), k=int(self.number_of_instances*0.95))
         sample_instance = []
         for s in sample_list:
@@ -76,6 +75,7 @@ class Nearest_Neighbor(object):
         best_so_far_accuracy = 0.
         best_set = set()
         wrong_upper_bound = self.number_of_instances
+        file = open('test_forward.txt', 'a')
         for i in range(1, self.number_of_features + 1):
             print("On the {0}th level of the search tree".format(i))
             feature_to_add_at_this_level = 0
@@ -91,7 +91,7 @@ class Nearest_Neighbor(object):
                         feature_to_add_at_this_level = j
                         best_accuracy_this_level = new_acc
                         wrong_upper_bound = self.number_of_instances - ret
-            print("best_accuracy_this_level: {0}, best_so_far_accuracy: {1}".format(best_accuracy_this_level, best_so_far_accuracy))
+            file.write("{}, ".format(best_accuracy_this_level))
             self.current_feature_set.add(feature_to_add_at_this_level)
             print("On level {0}, I added feature {1} to current set".format(i, feature_to_add_at_this_level))
             if best_accuracy_this_level > best_so_far_accuracy:
@@ -99,6 +99,8 @@ class Nearest_Neighbor(object):
                 best_set = best_set.union(self.current_feature_set)
             # print("now the best set is {}".format(best_set))
         print("Overall, the best set with accuracy {0} is {1}".format(best_so_far_accuracy, best_set))
+        file.write('\n')
+        file.close()
 
     def backward_elimination(self):
         best_so_far_accuracy = 0.
@@ -124,7 +126,6 @@ class Nearest_Neighbor(object):
                     feature_to_subtract_at_this_level = feature
                     best_accuracy_this_level = new_acc
                     wrong_upper_bound = self.number_of_instances - ret
-            print("best_accuracy_this_level: {0}, best_so_far_accuracy: {1}".format(best_accuracy_this_level, best_so_far_accuracy))
             self.current_feature_set.remove(feature_to_subtract_at_this_level)
             print("On level {0}, I subtracted feature {1} from current set".format(i, feature_to_subtract_at_this_level))
             if best_accuracy_this_level >= best_so_far_accuracy:
@@ -133,74 +134,77 @@ class Nearest_Neighbor(object):
             # print("now the best set is {}".format(best_set))
         print("Overall, the best set with accuracy {0} is {1}".format(best_so_far_accuracy, best_set))
 
-    def search(self, sample, sample_rate, ignore_set=set()):
+    def search(self, sample, sample_rate, potential_set=set(), ignore_set=set()):
         current_feature_set = set()
         best_set = set()
         best_so_far_accuracy = 0.
         falling_count = 0
         if sample_rate < 6:
             sample_rate = 6
+        if len(potential_set) == 0:
+            potential_set = {x for x in range(1, self.number_of_features + 1)}
         for i in range(1, sample_rate):
             print("On the {0}th level of the search tree".format(i))
             wrong_upper_bound = len(sample)
             feature_to_add_at_this_level = 0
             best_accuracy_this_level = 0.
-            for j in range(1, self.number_of_features + 1):
+            for feature in potential_set:
                 test_feature_set = current_feature_set.copy()
-                if j not in test_feature_set and j not in ignore_set:
-                    test_feature_set.add(j)
+                if feature not in test_feature_set and feature not in ignore_set:
+                    test_feature_set.add(feature)
                     ret = self.leave_one_out_cross_validation(sample, test_feature_set, wrong_upper_bound)
                     new_acc = float(ret) / self.number_of_instances
-                    print("--Consider adding the {0}th feature => acc = {1}".format(j, new_acc))
+                    print("--Consider adding the {0}th feature => acc = {1}".format(feature, new_acc))
                     if new_acc > best_accuracy_this_level:
-                        feature_to_add_at_this_level = j
+                        feature_to_add_at_this_level = feature
                         best_accuracy_this_level = new_acc
                         wrong_upper_bound = self.number_of_instances - ret
-            print("best_accuracy_this_level: {0}, best_so_far_accuracy: {1}".format(best_accuracy_this_level, best_so_far_accuracy))
             current_feature_set.add(feature_to_add_at_this_level)
             print("On level {0}, I added feature {1} to current set".format(i, feature_to_add_at_this_level))
-            if best_accuracy_this_level > best_so_far_accuracy:
+            if best_accuracy_this_level >= best_so_far_accuracy:
                 best_so_far_accuracy = best_accuracy_this_level
                 best_set = best_set.union(current_feature_set)
             elif best_accuracy_this_level < best_so_far_accuracy:
                 falling_count += 1
-                if falling_count > 3:
+                if falling_count > 5:
                     break
         return best_set
 
     def my_algorithm(self):
-        first_round_acc = 0.
+        first_round_acc = 0
         strong_feature_set = {i for i in range(1, self.number_of_features + 1)}
         weak_feature_set = {i for i in range(1, self.number_of_features + 1)}
-        for _ in range(5):
+        potential_feature_set = set()
+        for _ in range(2):
             sample = self.resample()
-            new_features = self.search(sample, int(self.number_of_features * 0.1))
+            new_features = self.search(sample, int(self.number_of_features * 0.5))
+            potential_feature_set = potential_feature_set.union(new_features)
             strong_feature_set = strong_feature_set.intersection(new_features)
             first_round_acc = max(first_round_acc,
                                   self.leave_one_out_cross_validation(self.data_list, 
                                                                       new_features,
                                                                       self.number_of_instances))
-
-        for _ in range(5):
+        for _ in range(2):
             sample = self.resample()
-            new_features = self.search(sample, int(self.number_of_features * 0.1), strong_feature_set)
+            new_features = self.search(sample, len(potential_feature_set), potential_feature_set, strong_feature_set)
             weak_feature_set = weak_feature_set.intersection(new_features)
 
         print("Strong features: {0}, with acc: {1}".format(strong_feature_set, first_round_acc / len(self.data_list)))
         strong_feature_set = strong_feature_set.union(weak_feature_set)
+        print("Potential features: {0}".format(potential_feature_set))
         ret = self.leave_one_out_cross_validation(self.data_list, strong_feature_set, len(self.data_list))
         acc = float(ret) / len(self.data_list)
         print("Overall, the best set with accuracy {0} is {1}".format(acc, strong_feature_set))
 
 
 def main():
-    # input_file_name = input("Type in the name of the file to test: ")
+    input_file_name = input("Type in the name of the file to test: ")
     print("Type the number of the algorithm you want to run.")
     print("\t 1) Forward Selection")
     print("\t 2) Backward Elimination")
     print("\t 3) My Algorithm")
     method_option = input()
-    input_file_name = "CS205_BIGtestdata__41.txt"
+    # input_file_name = "CS205_SMALLtestdata__14.txt".format(i)
     start_time = time()
     nearest_neighbor = Nearest_Neighbor(input_file_name)
     if method_option == '1':
